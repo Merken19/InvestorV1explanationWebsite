@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InvestorV1 — Trading App Designed for AI</title>
+  <meta name="description" content="A trading platform built for AI as much as for humans. People can chart, test and trade through it, while AI can automate a strategy end to end: designing it, testing it and running it live." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div id="loading">
+    <div class="loading-inner">
+      <span class="loading-name">InvestorV1</span>
+      <span class="loading-text">Loading presentation…</span>
+    </div>
+  </div>
+
+  <div id="slides"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    const container = document.getElementById('slides');
+    const loading = document.getElementById('loading');
+
+    pdfjsLib.getDocument('projectPresentation.pdf').promise.then(function(pdf) {
+      const total = pdf.numPages;
+      const wrappers = [];
+
+      // Pre-create all wrappers to preserve slide order
+      for (let i = 1; i <= total; i++) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'slide';
+        wrapper.id = 'slide-' + i;
+        const canvas = document.createElement('canvas');
+        wrapper.appendChild(canvas);
+        container.appendChild(wrapper);
+        wrappers.push({ wrapper, canvas });
+      }
+
+      // Render each page
+      const renderPage = function(pageNum) {
+        return pdf.getPage(pageNum).then(function(page) {
+          const scale = 2;
+          const viewport = page.getViewport({ scale });
+          const { canvas } = wrappers[pageNum - 1];
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          return page.render({
+            canvasContext: canvas.getContext('2d'),
+            viewport
+          }).promise;
+        }).then(function() {
+          if (pageNum === 1) {
+            loading.classList.add('hidden');
+          }
+        });
+      };
+
+      // Render all pages (parallel but display in order due to pre-created slots)
+      const promises = [];
+      for (let i = 1; i <= total; i++) {
+        promises.push(renderPage(i));
+      }
+      return Promise.all(promises).then(addOverlays);
+
+    }).catch(function(err) {
+      loading.innerHTML = '<div class="loading-inner"><span class="loading-name">InvestorV1</span><span class="loading-text">Could not load presentation.</span></div>';
+      console.error(err);
+    });
+
+    function addOverlays() {
+      // Helper: create a clickable link overlay
+      function makeLink(href, left, top, width, height) {
+        var a = document.createElement('a');
+        a.className = 'slide-overlay-link';
+        a.href = href;
+        // mailto: links hand off to the mail app, so they shouldn't open a blank tab
+        if (href.indexOf('mailto:') !== 0) {
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+        }
+        a.style.left = left;
+        a.style.top = top;
+        a.style.width = width;
+        a.style.height = height;
+        return a;
+      }
+
+      // Slide 8: Contact email link (icon + address)
+      var slide8 = document.getElementById('slide-8');
+      if (slide8) {
+        slide8.appendChild(makeLink(
+          'mailto:erenerken@hotmail.com.tr',
+          '75.30%', '81.60%', '18.70%', '4.50%'
+        ));
+      }
+    }
+  </script>
+
+</body>
+</html>
